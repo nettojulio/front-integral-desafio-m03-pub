@@ -1,41 +1,37 @@
-import CloseIcon from '../../assets/close.svg';
-import { useEffect, useState } from 'react';
-import { dayOfWeek } from '../../utils/dias/dia'
-import urlTeste from '../../test/index';
+import { useEffect, useState } from "react";
+import InputMask from "react-input-mask";
+import CloseIcon from "../../assets/close.svg";
+import { formatDate, formatWeekDay } from "../../utils/formatter";
+import "./styles.css";
 
 const defaultInput = {
-  value: '',
-  category: '',
-  date: '',
-  description: ''
-}
+  value: "",
+  category: "",
+  date: "",
+  description: "",
+};
 
-function Backdrop({ typeBackdrop, setModal, modal, refreshScreen, setRefreshScreen, handleCloseModal, editTransaction }) {
-
-  const [selectedTransaction, setSelectedTransaction] = useState('debit');
+function Backdrop({ setModal, modal, currentTransaction }) {
+  const [selectedTransaction, setSelectedTransaction] = useState("debit");
   const [currentInput, setCurrentInput] = useState(defaultInput);
 
   useEffect(() => {
-    return () => {
+    if (modal && !currentTransaction) {
       setCurrentInput(defaultInput);
-    }
-  }, [modal])
-
-  useEffect(() => {
-    if (editTransaction) {
-      const formatEditItem = {
-        value: editTransaction.value,
-        category: editTransaction.category,
-        description: editTransaction.description,
-        type: editTransaction.type,
-        date: +new Date(editTransaction.date)
-      };
-
-      setSelectedTransaction(formatEditItem.type);
-      setCurrentInput({ ...formatEditItem });
+      return;
     }
 
-  }, [editTransaction]);
+    if (currentTransaction) {
+      setSelectedTransaction(currentTransaction.type);
+
+      setCurrentInput({
+        date: formatDate(currentTransaction.date),
+        category: currentTransaction.category,
+        value: currentTransaction.value,
+        description: currentTransaction.description,
+      });
+    }
+  }, [currentTransaction, modal]);
 
   function handleOnChange({ target }) {
     setCurrentInput({ ...currentInput, [target.name]: target.value });
@@ -45,83 +41,90 @@ function Backdrop({ typeBackdrop, setModal, modal, refreshScreen, setRefreshScre
     event.preventDefault();
 
     try {
-      if (!currentInput.description || !currentInput.value || !currentInput.category || !selectedTransaction) {
+      if (
+        !currentInput.description ||
+        !currentInput.value ||
+        !currentInput.category ||
+        !selectedTransaction
+      ) {
         return;
       }
 
-      const data = {
-        date: currentInput.date,
-        week_day: dayOfWeek(currentInput.date),
-        description: currentInput.description,
-        value: parseFloat(currentInput.value),
-        category: currentInput.category,
-        type: selectedTransaction
-      }
+      const [day, month, year] = currentInput.date.split("/");
+      const selectDate = new Date(`${month}/${day}/${year}`);
 
-      const methodType = editTransaction ? 'PUT' : 'POST';
-      const url = editTransaction ? `${urlTeste}/${editTransaction.id}` : `${urlTeste}`;
+      const bodyForm = {
+        date: selectDate,
+        week_day: formatWeekDay(selectDate),
+        description: currentInput.description,
+        value: currentInput.value,
+        category: currentInput.category,
+        type: selectedTransaction,
+      };
+
+      const methodType = currentTransaction ? "PUT" : "POST";
+      const url = currentTransaction
+        ? `http://localhost:3333/transactions/${currentTransaction.id}`
+        : "http://localhost:3333/transactions";
 
       const response = await fetch(url, {
         method: methodType,
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(bodyForm),
       });
 
       await response.json();
       setModal(false);
-      setRefreshScreen(!refreshScreen);
     } catch (error) {
+      alert(error.message);
     }
   }
 
-  function clearAll() {
-    handleCloseModal();
-    setModal(!modal);
-    setCurrentInput(defaultInput);
-  }
-
   return (
-    <div className="backdrop flex-column">
-      <div className="modal-container flex-column">
-        <h2 className="font-rubik">{typeBackdrop ? 'Editar Registro' : 'Adicionar Registro'}</h2>
+    <div className="backdrop flex-column jc-center">
+      <div className="modal-container flex-column ai-center">
+        <h2 className="font-rubik">
+          {currentTransaction ? "Editar Registro" : "Adicionar Registro"}
+        </h2>
         <img
-          className="close-icon"
+          className="close-icon cursor-pointer"
           src={CloseIcon}
           alt="Close icon"
-          onClick={() => clearAll()}
+          onClick={() => setModal(false)}
         />
         <div className="container-buttons flex-row">
           <button
             id="credit-button"
-            className={`btn-new-transaction font-rubik flex-row ${selectedTransaction === 'credit' && 'credit'}`}
-            onClick={() => setSelectedTransaction('credit')}
+            className={`btn-new-transaction font-rubik flex-row jc-center ai-center ${
+              selectedTransaction === "credit" && "credit"
+            }`}
+            onClick={() => setSelectedTransaction("credit")}
           >
             Entrada
           </button>
           <button
             id="debit-button"
-            className={`btn-new-transaction font-rubik flex-row ${selectedTransaction === 'debit' && 'debit'}`}
-            onClick={() => setSelectedTransaction('debit')}
+            className={`btn-new-transaction font-rubik flex-row jc-center ai-center ${
+              selectedTransaction === "debit" && "debit"
+            }`}
+            onClick={() => setSelectedTransaction("debit")}
           >
             Saída
           </button>
         </div>
 
-        <form
-          className="flex-column"
-          onSubmit={handleOnSubmit}
-        >
+        <form className="flex-column" onSubmit={handleOnSubmit}>
           <div className="labels flex-column">
             <label className="font-rubik">Valor</label>
             <input
               onChange={(event) => handleOnChange(event)}
               value={currentInput.value}
-              name="value"
               type="number"
-              min="0"
+              name="value"
               required
+              min="0"
             />
           </div>
           <div className="labels flex-column">
@@ -129,16 +132,18 @@ function Backdrop({ typeBackdrop, setModal, modal, refreshScreen, setRefreshScre
             <input
               onChange={(event) => handleOnChange(event)}
               value={currentInput.category}
+              type="text"
               name="category"
               required
             />
           </div>
           <div className="labels flex-column">
             <label className="font-rubik">Data</label>
-            <input
+            <InputMask
+              mask="99/99/9999"
+              maskPlaceholder="dd/mm/yy"
               onChange={(event) => handleOnChange(event)}
               value={currentInput.date}
-              type="datetime-local"
               name="date"
               required
             />
@@ -147,18 +152,21 @@ function Backdrop({ typeBackdrop, setModal, modal, refreshScreen, setRefreshScre
             <label className="font-rubik">Descrição</label>
             <input
               onChange={(event) => handleOnChange(event)}
+              value={currentInput.description}
+              type="text"
               name="description"
               required
-              value={currentInput.description}
             />
           </div>
           <div className="container-btn-insert flex-row">
-            <button type="submit" className='btn-insert font-rubik'>Confirmar</button>
+            <button type="submit" className="btn-insert font-rubik">
+              Confirmar
+            </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }
 
 export default Backdrop;

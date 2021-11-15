@@ -1,89 +1,84 @@
-import TriangleUp from '../../assets/arrow-up.svg';
-import TriangleDown from '../../assets/arrow-down.svg';
-import { DeleteIcon } from './DeleteIcon';
-import { EditIcon } from './EditIcon';
-import { format } from 'date-fns';
-import { useState, useEffect } from 'react';
-import urlTest from '../../test';
+import { useState } from "react";
+import garbage from "../../assets/garbage.svg";
+import pencil from "../../assets/pencil.svg";
+import {
+  formatDate,
+  formatDateWord,
+  formatToMoney,
+} from "../../utils/formatter";
+import ConfirmDelete from "./ConfirmDelete";
+import "./styles.css";
+import TableHeader from "./TableHeader";
 
-function Transactions({ order, setModal, modal, setTypeBackdrop, editTransaction, setEditTransaction }) {
+function Transactions({
+  transactions,
+  setCurrentTransaction,
+  refreshScreen,
+  setRefreshScreen,
+  handleOrderTransactions,
+}) {
+  const [idItemDelete, setIdItemDelete] = useState(null);
 
-  const [transactionsLocal, setTransactionsLocal] = useState([]);
-  useEffect(() => {
-    loadTransactions();
-  }, []);
-
-  async function loadTransactions() {
+  async function handleDeleteTransaction() {
     try {
-      const response = await fetch(`${urlTest}`, {
-        method: 'GET'
+      await fetch(`http://localhost:3333/transactions/${idItemDelete}`, {
+        method: "DELETE",
       });
-      const data = await response.json();
-
-      setTransactionsLocal(data);
+      setIdItemDelete(null);
+      setRefreshScreen(!refreshScreen);
     } catch (error) {
-      alert(error);
+      alert(error.message);
     }
   }
-
   return (
     <div className="table">
-      <div className={"table-head flex-row"}>
-        <div
-          id="date"
-          className="column-title flex-row cursor-pointer"
-        >
-          <p>Data</p>
-          <img src={order ? TriangleUp : TriangleDown} alt="triangle" />
-        </div>
-        <div
-          id="week-day"
-          className="column-title flex-row cursor-pointer"
-        >
-          <p>Dia da semana</p>
-          <img src={order ? TriangleUp : TriangleDown} alt="triangle" />
-        </div>
-        <div className="column-title flex-row">
-          <p>Descrição</p>
-        </div>
-        <div className="column-title flex-row">
-          <p>Categoria</p>
-        </div>
-        <div
-          id="value"
-          className="column-title flex-row cursor-pointer"
-        >
-          <p>Valor</p>
-          <img src={order ? TriangleUp : TriangleDown} alt="triangle" />
-        </div>
-        <div className="column-title flex-row"></div>
-      </div>
+      <TableHeader
+        transactions={transactions}
+        handleOrderTransactions={handleOrderTransactions}
+      />
       <div className="table-body flex-column">
-        {transactionsLocal.map((transaction) => (
-          <div className="table-line flex-row" key={transaction.id}>
-            <p className="line-items flex-row">{format(new Date(transaction.date), 'dd/MM/yyyy')}</p>
-            <p className="line-items flex-row">{transaction.week_day}</p>
-            <p className="line-items flex-row">{transaction.description}</p>
-            <p className="line-items flex-row">{transaction.category}</p>
-            <p className={`line-items flex-row ${transaction.type}-type`}>{`${(transaction.value).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })}`}</p>
-            <div className="line-items flex-row">
-              <EditIcon
-                transaction={transaction}
-                setModal={setModal}
-                modal={modal}
-                setTypeBackdrop={setTypeBackdrop}
-                editTransaction={editTransaction}
-                setEditTransaction={setEditTransaction}
+        {transactions.map((transaction) => (
+          <div className="table-line flex-row jc-space-between ai-center" key={transaction.id}>
+            <div className="line-items flex-row jc-center ai-center">
+              {formatDate(transaction.date)}
+            </div>
+            <div className="line-items flex-row jc-center ai-center">
+              {formatDateWord(transaction.week_day)}
+            </div>
+            <div className="line-items flex-row jc-center ai-center">{transaction.description}</div>
+            <div className="line-items flex-row jc-center ai-center">{transaction.category}</div>
+            <div
+              className={`line-items flex-row jc-center ai-center ${
+                transaction.type === "credit" ? "credit" : "debit"
+              }-type`}
+            >
+              {formatToMoney(transaction.value)}
+            </div>
+            <div className="line-items flex-row jc-center ai-center">
+              <img
+                className="cursor-pointer"
+                src={pencil}
+                alt=""
+                onClick={() => setCurrentTransaction(transaction)}
               />
-              <DeleteIcon
-                transaction={transaction}
+              <img
+                className="cursor-pointer"
+                src={garbage}
+                alt=""
+                onClick={() => setIdItemDelete(transaction.id)}
+              />
+              <ConfirmDelete
+                show={transaction.id === idItemDelete}
+                setShow={() => setIdItemDelete(null)}
+                message="Apagar Item?"
+                handleConfirm={() => handleDeleteTransaction()}
               />
             </div>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 export default Transactions;

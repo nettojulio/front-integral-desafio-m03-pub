@@ -1,60 +1,58 @@
-import { useState, useEffect, useRef } from 'react';
-import RegisterButton from './RegisterButton';
+import { useEffect, useState } from "react";
+import { formatToMoney } from "../../utils/formatter";
+import "./styles.css";
 
+function Resume({ setModal, transactions }) {
+  const [resume, setResume] = useState({ credit: 0, debit: 0, balance: 0 });
 
-function Resume({ modal, setModal, setTypeBackdrop, transactions, setRefreshScreen, refreshScreen }) {
-    const [credits, setCredits] = useState(0);
-    const [debits, setDebits] = useState(0);
-    const [balance, setBalance] = useState(0);
-    const creditsRef = useRef([]);
-    const debitsRef = useRef([]);
+  useEffect(() => {
+    const sumCredit = transactions.reduce((acc, cur) => {
+      return cur.type === "credit" ? acc + Number(cur.value) : acc + 0;
+    }, 0);
 
-    useEffect(() => {
-        async function processData() {
-            let creditsSum = 0;
-            let debitsSum = 0;
+    const sumDebit = transactions.reduce((acc, cur) => {
+      return cur.type === "debit" ? acc + Number(cur.value) : acc + 0;
+    }, 0);
 
-            transactions.map((transaction) => {
-                if (transaction.type === 'credit') {
-                    creditsRef.current = transaction.value;
-                    creditsSum = creditsSum + creditsRef.current;
-                } else {
-                    debitsRef.current = transaction.value;
-                    debitsSum = debitsSum + debitsRef.current;
-                }
-            })
-            setCredits(creditsSum);
-            setDebits(debitsSum);
-            setBalance(creditsSum - debitsSum);
-        }
-        processData()
-        setRefreshScreen(!refreshScreen);
-    }, []);
+    setResume({
+      credit: sumCredit,
+      debit: sumDebit,
+      balance: sumCredit - sumDebit,
+    });
+  }, [transactions]);
 
-    return (
-        <div>
-            <div className="container-resume flex-column">
-                <h2 className="resume-title font-rubik">Resumo</h2>
-                <div className="resume-line flex-row">
-                    <h3 className="resume-title-in font-rubik">Entradas</h3>
-                    <p className="in flex-row font-rubik">{(credits).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-                <div className="resume-line flex-row">
-                    <h3 className="resume-title-out font-rubik">Saídas</h3>
-                    <p className="out flex-row font-rubik">{(debits).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-                <div className="resume-line flex-row">
-                    <h3 className="resume-title-balance font-rubik">Saldo</h3>
-                    <p className="balance flex-row font-rubik">{(balance).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })}</p>
-                </div>
-            </div>
-            <RegisterButton
-                modal={modal}
-                setModal={setModal}
-                setTypeBackdrop={setTypeBackdrop}
-            />
+  return (
+    <div>
+      <div className="container-resume flex-column">
+        <h2 className="resume-title font-rubik">Resumo</h2>
+        <div className="resume-line flex-row jc-space-between ai-center">
+          <span className="resume-title-in font-rubik">Entradas</span>
+          <strong className="in flex-row font-rubik ai-center">
+            {formatToMoney(resume.credit)}
+          </strong>
         </div>
-    )
+        <div className="resume-line flex-row jc-space-between ai-center">
+          <span className="resume-title-out font-rubik">Saídas</span>
+          <strong className="out flex-row font-rubik ai-center">
+            {formatToMoney(resume.debit)}
+          </strong>
+        </div>
+        <div className="horizontal-line"></div>
+        <div className="resume-line flex-row jc-space-between ai-center">
+          <span className="resume-title-balance font-rubik">Saldo</span>
+          <strong className="balance flex-row font-rubik ai-center">
+            {formatToMoney(resume.balance)}
+          </strong>
+        </div>
+      </div>
+      <button
+        className="btn-add flex-row font-rubik jc-center ai-center"
+        onClick={() => setModal(true)}
+      >
+        Adicionar Registro
+      </button>
+    </div>
+  );
 }
 
 export default Resume;
