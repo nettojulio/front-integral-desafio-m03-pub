@@ -21,7 +21,7 @@ function Transactions({
 
   async function handleDeleteTransaction() {
     try {
-      await fetch(`http://localhost:3333/transactions/${idItemDelete}`, {
+      await fetch(`https://dindin-api.herokuapp.com/transactions/${idItemDelete}`, {
         method: "DELETE",
       });
       setIdItemDelete(null);

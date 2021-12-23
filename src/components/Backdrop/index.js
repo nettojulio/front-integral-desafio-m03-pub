@@ -64,8 +64,8 @@ function Backdrop({ setModal, modal, currentTransaction }) {
 
       const methodType = currentTransaction ? "PUT" : "POST";
       const url = currentTransaction
-        ? `http://localhost:3333/transactions/${currentTransaction.id}`
-        : "http://localhost:3333/transactions";
+        ? `https://dindin-api.herokuapp.com/transactions/${currentTransaction.id}`
+        : "https://dindin-api.herokuapp.com/transactions";
 
       const response = await fetch(url, {
         method: methodType,

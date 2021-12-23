@@ -35,7 +35,7 @@ function Main() {
 
   async function loadTransactions() {
     try {
-      const response = await fetch("http://localhost:3333/transactions", {
+      const response = await fetch("https://dindin-api.herokuapp.com/transactions", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
